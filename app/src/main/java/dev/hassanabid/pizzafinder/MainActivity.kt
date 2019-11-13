@@ -14,10 +14,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
 import androidx.compose.View
+import androidx.compose.unaryPlus
 import androidx.core.app.ActivityCompat
+import androidx.ui.core.Clip
 import androidx.ui.core.Text
+import androidx.ui.core.dp
 import androidx.ui.core.setContent
+import androidx.ui.foundation.DrawImage
+import androidx.ui.foundation.VerticalScroller
+import androidx.ui.foundation.shape.corner.RoundedCornerShape
+import androidx.ui.layout.*
 import androidx.ui.material.MaterialTheme
+import androidx.ui.res.imageResource
 import androidx.ui.tooling.preview.Preview
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -222,11 +230,39 @@ fun Greeting(name: String) {
     Text(text = "Hello $name!")
 }
 
+@Composable
+fun PizzaList() {
+    VerticalScroller() {
+        Column {
+            HeightSpacer(height = 16.dp)
+            ListItem()
+
+        }
+    }
+}
+
+@Composable
+fun ListItem(){
+    val image = +imageResource(R.drawable.pizza_dummy)
+    Padding(left = 16.dp, right = 16.dp) {
+        FlexRow(crossAxisAlignment = CrossAxisAlignment.Center) {
+            inflexible { 
+                Container(width = 56.dp, height = 56.dp) {
+                    Clip(RoundedCornerShape(4.dp)) {
+                        DrawImage(image)
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Preview
 @Composable
 fun DefaultPreview() {
     MaterialTheme {
         Greeting("Android")
+        PizzaList()
     }
 
 
