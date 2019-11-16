@@ -16,21 +16,26 @@ import androidx.compose.Composable
 import androidx.compose.View
 import androidx.compose.unaryPlus
 import androidx.core.app.ActivityCompat
-import androidx.ui.core.Clip
-import androidx.ui.core.Text
-import androidx.ui.core.dp
-import androidx.ui.core.setContent
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.ui.core.*
 import androidx.ui.foundation.DrawImage
 import androidx.ui.foundation.VerticalScroller
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.layout.*
+import androidx.ui.material.Divider
 import androidx.ui.material.MaterialTheme
+import androidx.ui.material.themeTextStyle
+import androidx.ui.material.withOpacity
 import androidx.ui.res.imageResource
 import androidx.ui.tooling.preview.Preview
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import dev.hassanabid.pizzafinder.service.PizzaFinderResponse
 import dev.hassanabid.pizzafinder.utils.Constants
 import dev.hassanabid.pizzafinder.utils.FetchAddressIntentService
+import dev.hassanabid.pizzafinder.viewmodel.PizzaViewModel
+import dev.hassanabid.pizzafinder.viewmodel.ViewModelFactory
 
 class MainActivity : AppCompatActivity() {
 
@@ -40,11 +45,15 @@ class MainActivity : AppCompatActivity() {
     private val ADDRESS_REQUESTED_KEY = "address-request-pending"
     private val LOCATION_ADDRESS_KEY = "location-address"
 
+    lateinit var viewModel: PizzaViewModel
+    private var restaurants: List<PizzaFinderResponse>? = null
+
+    private var newPlace = "cebu"
 
     private var fusedLocationClient: FusedLocationProviderClient? = null
     private var lastLocation: Location? = null
     private var addressRequested = false
-    private var addressOutput = ""
+    private var addressOutput: String? = ""
     private lateinit var resultReceiver: AddressResultReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,10 +69,29 @@ class MainActivity : AppCompatActivity() {
 
         // Set defaults, then update using values stored in the Bundle.
         addressRequested = true
-        addressOutput = ""
         updateValuesFromBundle(savedInstanceState)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        val repository = (applicationContext as MainApplication).pizzaFinderRepository
+        viewModel = ViewModelProvider(this, ViewModelFactory(repository)).get(PizzaViewModel::class.java)
+//        fetchRestList()
+    }
+
+
+    fun fetchRestList() {
+
+        viewModel.pizzaPlacesList(newPlace).observe(this, Observer {
+
+            it.onSuccess {
+                restaurants = it
+                Log.d("Restaurant", it.toString())
+                if(it.isEmpty()) {
+                    //TODO
+                }
+            }
+
+        })
     }
 
     override fun onStart() {
@@ -163,8 +191,10 @@ class MainActivity : AppCompatActivity() {
             // Show a toast message if an address was found.
             if (resultCode == Constants.SUCCESS_RESULT) {
                 Log.d("PizzaApp", "success - address was found")
+                newPlace = addressOutput
             }
 
+//            fetchRestList()
             addressRequested = false
 
         }
@@ -231,29 +261,56 @@ fun Greeting(name: String) {
 }
 
 @Composable
-fun PizzaList() {
+fun PizzaList(restaurants: List<PizzaFinderResponse>) {
     VerticalScroller() {
         Column {
             HeightSpacer(height = 16.dp)
-            ListItem()
+            restaurants.forEach{ rest ->
+
+                ListItem(rest.name)
+
+            }
+            ListItem("Pizza Hut")
+            ListDivider()
 
         }
     }
 }
 
 @Composable
-fun ListItem(){
+fun ListItem(name: String){
     val image = +imageResource(R.drawable.pizza_dummy)
     Padding(left = 16.dp, right = 16.dp) {
         FlexRow(crossAxisAlignment = CrossAxisAlignment.Center) {
             inflexible { 
-                Container(width = 56.dp, height = 56.dp) {
+                Container(width = 64.dp, height = 64.dp) {
                     Clip(RoundedCornerShape(4.dp)) {
                         DrawImage(image)
                     }
                 }
             }
+            expanded(1f) {
+
+                Column(crossAxisSize = LayoutSize.Expand) {
+                    Text(
+                            text = name,
+                            modifier = Spacing(16.dp),
+                            style = +themeTextStyle { h6 })
+                    Text(
+                            text = name,
+                            modifier = Spacing(16.dp, -8.dp, 16.dp, 16.dp),
+                            style = (+themeTextStyle { body2 }).withOpacity(0.87f))
+                }
+            }
+
         }
+    }
+}
+
+@Composable
+private fun ListDivider() {
+    Opacity(0.08f) {
+        Divider(Spacing(top = 8.dp, bottom = 8.dp, left = 72.dp))
     }
 }
 
@@ -262,7 +319,7 @@ fun ListItem(){
 fun DefaultPreview() {
     MaterialTheme {
         Greeting("Android")
-        PizzaList()
+        PizzaList(emptyList())
     }
 
 
