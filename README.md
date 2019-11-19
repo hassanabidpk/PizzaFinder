@@ -8,6 +8,7 @@ It's a sample app to demonstrate usage of following key libraries.
 - Reactive UIs using LiveData observables
 - Dependency injection 🗡 [Work in Progress]
 - tests 🛠 [Work in Progress]
+- Load image from network [ Work in Progress]
 
 
 ![Image](screenshots/screenshot_1.png)
@@ -20,6 +21,9 @@ You will require latest canary version of Android Studio 4.0. Please download fr
 ## Architecture
 
 This app uses recommended Android app architecture on [Android Developers site](https://developer.android.com/jetpack/docs/guide)
+
+
+Companion slides can be downloaded from [Speakerdeck](https://speakerdeck.com/hassanabidpk/improving-app-performance-with-kotlin-coroutines)
 
 ## License
 
