@@ -1,4 +1,4 @@
-package dev.hassanabid.pizzafinder.service
+package dev.hassanabid.android.architecture.service
 
 import com.google.gson.annotations.SerializedName
 

@@ -1,16 +1,16 @@
-package dev.hassanabid.pizzafinder.viewmodel
+package dev.hassanabid.android.architecture.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
-import dev.hassanabid.pizzafinder.data.PizzaFinderRepository
+import dev.hassanabid.android.architecture.data.PizzaFinderRepository
 import kotlinx.coroutines.Dispatchers
 
 class PizzaViewModel(
     private val pizzaFinderRepository: PizzaFinderRepository
 ): ViewModel() {
 
-    fun pizzaPlacesList(location: String) = liveData (Dispatchers.IO) {
-        val fetchedList = pizzaFinderRepository.getPizzaPlaces("json",location, "pizza")
+    fun pizzaPlacesList(lat: String, lng: String) = liveData (Dispatchers.IO) {
+        val fetchedList = pizzaFinderRepository.getPizzaPlaces("json",lat, lng, "pizza")
 
         try {
             emit(Result.success(fetchedList))

@@ -10,6 +10,9 @@ It's a sample app to demonstrate usage of following key libraries.
 - tests 🛠 [Work in Progress]
 
 
+![Image](screenshots/screenshot_1.png)
+
+
 # Development Setup 🖥
 
 You will require latest canary version of Android Studio 4.0. Please download from [here](https://developer.android.com/studio/preview)

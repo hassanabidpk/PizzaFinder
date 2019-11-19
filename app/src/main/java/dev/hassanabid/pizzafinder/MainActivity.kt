@@ -10,12 +10,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.ResultReceiver
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
-import androidx.compose.View
 import androidx.compose.unaryPlus
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.ui.core.*
@@ -23,19 +23,18 @@ import androidx.ui.foundation.DrawImage
 import androidx.ui.foundation.VerticalScroller
 import androidx.ui.foundation.shape.corner.RoundedCornerShape
 import androidx.ui.layout.*
-import androidx.ui.material.Divider
-import androidx.ui.material.MaterialTheme
-import androidx.ui.material.themeTextStyle
-import androidx.ui.material.withOpacity
+import androidx.ui.material.*
 import androidx.ui.res.imageResource
 import androidx.ui.tooling.preview.Preview
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import dev.hassanabid.pizzafinder.service.PizzaFinderResponse
+import dev.hassanabid.android.architecture.service.PizzaFinderResponse
+import dev.hassanabid.android.architecture.viewmodel.PizzaViewModel
+import dev.hassanabid.android.architecture.viewmodel.ViewModelFactory
 import dev.hassanabid.pizzafinder.utils.Constants
 import dev.hassanabid.pizzafinder.utils.FetchAddressIntentService
-import dev.hassanabid.pizzafinder.viewmodel.PizzaViewModel
-import dev.hassanabid.pizzafinder.viewmodel.ViewModelFactory
+import dev.hassanabid.pizzafinder.utils.imageResources
+import dev.hassanabid.pizzafinder.utils.lightThemeColors
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,7 +47,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var viewModel: PizzaViewModel
     private var restaurants: List<PizzaFinderResponse>? = null
 
-    private var newPlace = "cebu"
+    private var newPlace = "New york"
 
     private var fusedLocationClient: FusedLocationProviderClient? = null
     private var lastLocation: Location? = null
@@ -58,11 +57,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                Greeting("Android")
-            }
-        }
+        val repository = (applicationContext as MainApplication).pizzaFinderRepository
+        viewModel = ViewModelProvider(this, ViewModelFactory(repository)).get(PizzaViewModel::class.java)
 
         Log.d("PizzaApp", "onCreate")
         resultReceiver = AddressResultReceiver(Handler())
@@ -73,25 +69,53 @@ class MainActivity : AppCompatActivity() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        val repository = (applicationContext as MainApplication).pizzaFinderRepository
-        viewModel = ViewModelProvider(this, ViewModelFactory(repository)).get(PizzaViewModel::class.java)
-//        fetchRestList()
     }
 
 
     fun fetchRestList() {
 
-        viewModel.pizzaPlacesList(newPlace).observe(this, Observer {
+       /* val lat = "40.7837479"
+        val lng = "-74.0104637"*/
+        viewModel.pizzaPlacesList("${lastLocation?.latitude}", "${lastLocation?.longitude}").observe(this, Observer {
 
             it.onSuccess {
                 restaurants = it
-                Log.d("Restaurant", it.toString())
+                Log.d(TAG, "rest list : ${it.toString()}")
+                setAppView()
                 if(it.isEmpty()) {
                     //TODO
                 }
             }
 
         })
+    }
+
+    private fun setAppView() {
+
+        setContent {
+            MaterialTheme (colors = lightThemeColors) {
+                FlexColumn {
+                    inflexible {
+                        AppTopBar()
+                    }
+
+                    flexible(flex = 1f) {
+                        VerticalScroller {
+                            Column {
+                                Padding(top = 16.dp, left = 16.dp, right = 16.dp, bottom = 0.dp) {
+                                    Text(
+                                        text = "Pizza restaurants nearby $newPlace",
+                                        style = (+themeTextStyle { subtitle1 }).withOpacity(0.87f)
+                                    )
+                                }
+                                PizzaList(restaurants)
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
     }
 
     override fun onStart() {
@@ -137,6 +161,7 @@ class MainActivity : AppCompatActivity() {
         fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
             if (location == null) {
                 Log.w(TAG, "onSuccess:null")
+                fetchRestList()
                 return@addOnSuccessListener
             }
 
@@ -144,7 +169,7 @@ class MainActivity : AppCompatActivity() {
 
             // Determine whether a Geocoder is available.
             if (!Geocoder.isPresent()) {
-                Log.e(TAG, "no geocoder servuce available")
+                Log.e(TAG, "no geocoder service available")
                 return@addOnSuccessListener
             }
 
@@ -161,6 +186,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(Constants.RECEIVER, resultReceiver)
             putExtra(Constants.LOCATION_DATA_EXTRA, lastLocation)
         }
+        Log.d(TAG, "latitude : ${lastLocation?.latitude} longitude: ${lastLocation?.longitude}")
         startService(intent)
     }
 
@@ -185,16 +211,14 @@ class MainActivity : AppCompatActivity() {
             // Display the address string
             // or an error message sent from the intent service.
             val addressOutput = resultData?.getString(Constants.RESULT_DATA_KEY) ?: ""
-            Log.d("PizzaApp", "success - address : $addressOutput")
-            displayAddressOutput()
-
+            Log.d(TAG, "success - address : $addressOutput")
             // Show a toast message if an address was found.
             if (resultCode == Constants.SUCCESS_RESULT) {
-                Log.d("PizzaApp", "success - address was found")
+                Log.d(TAG, "success - address was found")
                 newPlace = addressOutput
             }
 
-//            fetchRestList()
+            fetchRestList()
             addressRequested = false
 
         }
@@ -256,34 +280,32 @@ class MainActivity : AppCompatActivity() {
 }
 
 @Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
-@Composable
-fun PizzaList(restaurants: List<PizzaFinderResponse>) {
+fun PizzaList(restaurants: List<PizzaFinderResponse>?) {
     VerticalScroller() {
         Column {
             HeightSpacer(height = 16.dp)
-            restaurants.forEach{ rest ->
-
-                ListItem(rest.name)
-
+            restaurants?.forEachIndexed {index, rest ->
+                var address = "Not Available"
+                rest.address?.let { address = it  }
+                var resourceId = imageResources[0]
+                if(index < imageResources.size)
+                    resourceId = imageResources[index]
+                PizzaListItem(rest.name, address, resourceId)
             }
-            ListItem("Pizza Hut")
             ListDivider()
 
         }
     }
 }
 
+
 @Composable
-fun ListItem(name: String){
-    val image = +imageResource(R.drawable.pizza_dummy)
+fun PizzaListItem(name: String, address: String, imageResourceId : Int){
+    val image = +imageResource(imageResourceId)
     Padding(left = 16.dp, right = 16.dp) {
         FlexRow(crossAxisAlignment = CrossAxisAlignment.Center) {
             inflexible { 
-                Container(width = 64.dp, height = 64.dp) {
+                Container(width = 80.dp, height = 80.dp) {
                     Clip(RoundedCornerShape(4.dp)) {
                         DrawImage(image)
                     }
@@ -297,8 +319,9 @@ fun ListItem(name: String){
                             modifier = Spacing(16.dp),
                             style = +themeTextStyle { h6 })
                     Text(
-                            text = name,
-                            modifier = Spacing(16.dp, -8.dp, 16.dp, 16.dp),
+                            text = address,
+                            modifier = Spacing(16.dp, (-8.dp), 16.dp, 16.dp),
+                            maxLines = 2,
                             style = (+themeTextStyle { body2 }).withOpacity(0.87f))
                 }
             }
@@ -314,11 +337,33 @@ private fun ListDivider() {
     }
 }
 
+@Composable
+private fun AppTopBar() {
+    FlexColumn {
+        inflexible {
+            TopAppBar(
+                title = { Text(text = "PizzaFinder") }
+               /* navigationIcon = {
+                    VectorIm(R.drawable.ic_jetnews_logo) {
+                        openDrawer()
+                    }
+                }*/
+            )
+        }
+    }
+}
+
 @Preview
 @Composable
 fun DefaultPreview() {
-    MaterialTheme {
-        Greeting("Android")
+    MaterialTheme ( colors = lightThemeColors) {
+        AppTopBar()
+        Padding(top = 64.dp, left = 16.dp, right = 16.dp, bottom = 8.dp) {
+            Text(
+                text = "Pizza restaurants nearby you",
+                style = (+themeTextStyle { subtitle1 }).withOpacity(0.87f)
+            )
+        }
         PizzaList(emptyList())
     }
 

@@ -1,4 +1,4 @@
-package dev.hassanabid.pizzafinder.data
+package dev.hassanabid.android.architecture.data
 
 /**
  * A generic class that holds a value with its loading status.

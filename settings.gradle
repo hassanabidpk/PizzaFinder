@@ -1,2 +1,3 @@
 rootProject.name='PizzaFinder'
 include ':app'
+include ':architecture'

@@ -2,8 +2,8 @@ package dev.hassanabid.pizzafinder.utils
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
-import dev.hassanabid.pizzafinder.data.DefaultPizzaFinderRepository
-import dev.hassanabid.pizzafinder.data.PizzaFinderRepository
+import dev.hassanabid.android.architecture.data.DefaultPizzaFinderRepository
+import dev.hassanabid.android.architecture.data.PizzaFinderRepository
 
 object ServiceLocator {
 

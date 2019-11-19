@@ -1,8 +1,8 @@
-package dev.hassanabid.pizzafinder.viewmodel
+package dev.hassanabid.android.architecture.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import dev.hassanabid.pizzafinder.data.PizzaFinderRepository
+import dev.hassanabid.android.architecture.data.PizzaFinderRepository
 
 @Suppress("UNCHECKED_CAST")
 class ViewModelFactory constructor(

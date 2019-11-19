@@ -1,12 +1,11 @@
-package dev.hassanabid.pizzafinder.data
+package dev.hassanabid.android.architecture.data
 
-import dev.hassanabid.pizzafinder.service.PizzaFinderApi
-import dev.hassanabid.pizzafinder.service.PizzaFinderResponse
-import dev.hassanabid.pizzafinder.service.RetrofitClient
+import dev.hassanabid.android.architecture.service.PizzaFinderApi
+import dev.hassanabid.android.architecture.service.PizzaFinderResponse
+import dev.hassanabid.android.architecture.service.RetrofitClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import retrofit2.http.GET
 
 class DefaultPizzaFinderRepository (
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -14,14 +13,14 @@ class DefaultPizzaFinderRepository (
 
     var client: PizzaFinderApi = RetrofitClient.webservice
 
-    @GET
     override suspend fun getPizzaPlaces(
         format: String,
-        location: String,
+        latitude: String,
+        longitude: String,
         rtype: String
     ): List<PizzaFinderResponse> {
         return withContext(ioDispatcher) {
-            return@withContext client.getPizzaPlaces(format, location, rtype)
+            return@withContext client.getPizzaPlaces(format, latitude, longitude, rtype)
         }
     }
 }
