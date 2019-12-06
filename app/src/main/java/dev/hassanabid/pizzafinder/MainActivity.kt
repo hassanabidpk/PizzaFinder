@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.ResultReceiver
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.Composable
 import androidx.compose.unaryPlus
@@ -28,6 +29,7 @@ import androidx.ui.res.imageResource
 import androidx.ui.tooling.preview.Preview
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.material.snackbar.Snackbar
 import dev.hassanabid.android.architecture.service.PizzaFinderResponse
 import dev.hassanabid.android.architecture.viewmodel.PizzaViewModel
 import dev.hassanabid.android.architecture.viewmodel.ViewModelFactory
@@ -47,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var viewModel: PizzaViewModel
     private var restaurants: List<PizzaFinderResponse>? = null
 
-    private var newPlace = "New york"
+    private var newPlace = "KLCC"
 
     private var fusedLocationClient: FusedLocationProviderClient? = null
     private var lastLocation: Location? = null
@@ -60,7 +62,6 @@ class MainActivity : AppCompatActivity() {
         val repository = (applicationContext as MainApplication).pizzaFinderRepository
         viewModel = ViewModelProvider(this, ViewModelFactory(repository)).get(PizzaViewModel::class.java)
 
-        Log.d("PizzaApp", "onCreate")
         resultReceiver = AddressResultReceiver(Handler())
 
         // Set defaults, then update using values stored in the Bundle.
@@ -74,16 +75,23 @@ class MainActivity : AppCompatActivity() {
 
     fun fetchRestList() {
 
-       /* val lat = "40.7837479"
-        val lng = "-74.0104637"*/
-        viewModel.pizzaPlacesList("${lastLocation?.latitude}", "${lastLocation?.longitude}").observe(this, Observer {
+        var lat = "3.156954"
+        var lng = "101.7101143"
+
+        if(lastLocation?.latitude != null && lastLocation?.longitude != null) {
+
+            lat = "${lastLocation?.latitude}"
+            lng = "${lastLocation?.longitude}"
+        }
+        Log.d(TAG, "location ${lastLocation?.latitude} ${lastLocation?.longitude}")
+        viewModel.pizzaPlacesList("$lat", "$lng").observe(this, Observer {
 
             it.onSuccess {
                 restaurants = it
                 Log.d(TAG, "rest list : ${it.toString()}")
                 setAppView()
                 if(it.isEmpty()) {
-                    //TODO
+                    showSnackbar(R.string.no_pizza)
                 }
             }
 
@@ -158,14 +166,18 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     private fun getAddress() {
+
         fusedLocationClient?.lastLocation?.addOnSuccessListener { location ->
+
+            if(location != null) lastLocation = location
+
+            fetchRestList()
+
             if (location == null) {
                 Log.w(TAG, "onSuccess:null")
-                fetchRestList()
                 return@addOnSuccessListener
             }
 
-            lastLocation = location
 
             // Determine whether a Geocoder is available.
             if (!Geocoder.isPresent()) {
@@ -218,7 +230,6 @@ class MainActivity : AppCompatActivity() {
                 newPlace = addressOutput
             }
 
-            fetchRestList()
             addressRequested = false
 
         }
@@ -271,9 +282,23 @@ class MainActivity : AppCompatActivity() {
                 getAddress()
             else -> {
                 // Permission denied.
+                showSnackbar(R.string.permission_denied_explanation)
             }
 
         }
+    }
+
+    private fun showSnackbar(
+        snackStrId: Int,
+        actionStrId: Int = 0,
+        listener: View.OnClickListener? = null
+    ) {
+        val snackbar = Snackbar.make(findViewById(android.R.id.content), getString(snackStrId),
+            Snackbar.LENGTH_INDEFINITE)
+        if (actionStrId != 0 && listener != null) {
+            snackbar.setAction(getString(actionStrId), listener)
+        }
+        snackbar.show()
     }
 
 
