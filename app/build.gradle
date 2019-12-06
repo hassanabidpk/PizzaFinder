@@ -56,6 +56,7 @@ dependencies {
     implementation 'androidx.ui:ui-material:0.1.0-dev02'
     implementation 'androidx.ui:ui-tooling:0.1.0-dev02'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
+    implementation 'com.google.android.material:material:1.0.0'
 
     implementation project(":architecture")
     
